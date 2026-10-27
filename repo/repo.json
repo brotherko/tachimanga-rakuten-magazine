@@ -1,5 +1,8 @@
 {
   "meta": {
-    "name": "Rakuten Magazine Extension Repo"
+    "name": "Rakuten Magazine Extension Repo",
+    "shortName": "RakutenMagazine",
+    "website": "https://github.com/brotherko/tachimanga-rakuten-magazine",
+    "signingKeyFingerprint": "766a05c619eed72bfa95cb41c2f3f7cfeaba39ebbacc66c1912c2517ab2aac1f"
   }
 }
