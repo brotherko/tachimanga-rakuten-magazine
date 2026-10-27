@@ -1,0 +1,19 @@
+[
+  {
+    "name": "Tachiyomi: Rakuten Magazine",
+    "pkg": "eu.kanade.tachiyomi.extension.ja.rakutenmagazine",
+    "apk": "tachiyomi-ja.rakutenmagazine-v1.4.1.apk",
+    "lang": "ja",
+    "code": 1,
+    "version": "1.4.1",
+    "nsfw": 0,
+    "sources": [
+      {
+        "name": "Rakuten Magazine",
+        "lang": "ja",
+        "id": "810522397738553424",
+        "baseUrl": "https://magazine.rakuten.co.jp"
+      }
+    ]
+  }
+]

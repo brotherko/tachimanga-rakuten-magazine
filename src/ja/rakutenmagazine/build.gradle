@@ -1,0 +1,7 @@
+ext {
+    extName = 'Rakuten Magazine'
+    extClass = '.RakutenMagazine'
+    extVersionCode = 1
+}
+
+apply from: "$rootDir/common.gradle"

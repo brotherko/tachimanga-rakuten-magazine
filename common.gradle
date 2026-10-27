@@ -1,0 +1,137 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlinx-serialization'
+
+assert !ext.has("pkgNameSuffix")
+assert !ext.has("libVersion")
+
+assert extName.chars().max().asInt < 0x180 : "Extension name should be romanized"
+
+android {
+    compileSdk = 34
+
+    namespace = "eu.kanade.tachiyomi.extension"
+
+    sourceSets {
+        main {
+            manifest.srcFile layout.buildDirectory.file('tempAndroidManifest.xml')
+            java.directories.clear()
+            java.directories.add("src")
+            kotlin.directories.clear()
+            kotlin.directories.add("src")
+            res.directories.clear()
+            res.directories.add("res")
+            assets.directories.clear()
+            assets.directories.add("assets")
+        }
+        test {
+            java.directories.clear()
+            java.directories.add("test")
+            kotlin.directories.clear()
+            kotlin.directories.add("test")
+        }
+    }
+
+    defaultConfig {
+        minSdk = 21
+        targetSdk = 34
+        applicationIdSuffix = project.parent.name + "." + project.name
+        versionCode = extVersionCode
+        versionName = "1.4.$versionCode"
+        base {
+            archivesName = "tachiyomi-$applicationIdSuffix-v$versionName"
+        }
+        assert extClass.startsWith(".")
+        manifestPlaceholders = [
+                appName : "Tachiyomi: $extName",
+                extClass: extClass,
+                nsfw    : project.ext.find("isNsfw") ? 1 : 0,
+        ]
+    }
+
+    lint {
+        checkReleaseBuilds = false
+    }
+
+    signingConfigs {
+        release {
+            storeFile = rootProject.file("signingkey.jks")
+            storePassword = providers.environmentVariable("KEY_STORE_PASSWORD").orNull
+            keyAlias = providers.environmentVariable("ALIAS").orNull
+            keyPassword = providers.environmentVariable("KEY_PASSWORD").orNull
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig = rootProject.file("signingkey.jks").exists()
+                    ? signingConfigs.release
+                    : signingConfigs.debug
+            minifyEnabled = true
+            proguardFiles(
+                rootProject.file("proguard-rules.pro"),
+                layout.buildDirectory.file("generated-proguard-rules.pro").get().asFile
+            )
+            File proguardFile = file("proguard-rules.pro")
+            if (proguardFile.exists()) {
+                proguardFiles(proguardFile)
+            }
+            vcsInfo.include = false
+        }
+    }
+
+    dependenciesInfo {
+        includeInApk = false
+    }
+
+    buildFeatures {
+        buildConfig = true
+    }
+
+    packaging {
+        resources.excludes.add("kotlin-tooling-metadata.json")
+    }
+}
+
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.add("-opt-in=kotlinx.serialization.ExperimentalSerializationApi")
+        freeCompilerArgs.add("-Xcontext-parameters")
+    }
+}
+
+dependencies {
+    implementation(project(":core"))
+    compileOnly(libs.bundles.common)
+    testImplementation("junit:junit:4.13.2")
+    testImplementation(libs.bundles.common)
+}
+
+tasks.register("copyManifestFile", Copy) {
+    from 'AndroidManifest.xml'
+    rename { 'tempAndroidManifest.xml' }
+    into layout.buildDirectory
+}
+
+tasks.register("writeManifestFile") {
+    dependsOn(copyManifestFile)
+    File tempFile = android.sourceSets.getByName('main').manifest.srcFile
+    doLast {
+        if (!tempFile.exists()) {
+            tempFile.parentFile.mkdirs()
+            tempFile.write('<?xml version="1.0" encoding="utf-8"?>\n<manifest />\n')
+        }
+    }
+}
+
+tasks.register("writeProguardFile") {
+    File proguardFile = layout.buildDirectory.file("generated-proguard-rules.pro").get().asFile
+    String extClassPath = "${android.namespace}.${android.defaultConfig.applicationIdSuffix}${extClass}"
+    doLast {
+        proguardFile.parentFile.mkdirs()
+        proguardFile.withWriter {
+            it.writeLine("-keep class $extClassPath { <init>(); }")
+        }
+    }
+}
+
+preBuild.dependsOn(writeManifestFile, writeProguardFile)
